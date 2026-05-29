@@ -1,76 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PWP Robot Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWP Rover Control</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1117; --panel:#151c24; --panel2:#101720; --line:#2c3a47; --text:#f2f6fa; --muted:#9fb0bf; --green:#2fbf72; --red:#d94b4b; --blue:#3c83e6; --cyan:#29b8d6; --amber:#e0a338; }
+    * { box-sizing: border-box; }
+    html, body { width:100%; height:100%; margin:0; background:var(--bg); color:var(--text); font-family:Arial, Helvetica, sans-serif; letter-spacing:0; }
+    body { overflow:hidden; }
+    .app { display:grid; grid-template-rows:58px 1fr; height:100vh; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:0 18px; border-bottom:1px solid var(--line); background:#0f151c; }
+    h1 { margin:0; font-size:21px; }
+    .status { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill { padding:6px 10px; border:1px solid var(--line); background:var(--panel2); font-weight:700; white-space:nowrap; }
+    .grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr); grid-template-rows:minmax(0,1fr) minmax(230px,.72fr); gap:10px; height:calc(100vh - 58px); padding:10px; }
+    section { min-width:0; min-height:0; border:1px solid var(--line); background:var(--panel); overflow:hidden; }
+    .head { display:flex; justify-content:space-between; gap:12px; min-height:42px; padding:10px 12px; border-bottom:1px solid var(--line); font-size:14px; font-weight:700; }
+    .body { height:calc(100% - 42px); min-height:0; padding:12px; }
+    .videoBody { display:grid; grid-template-rows:1fr 42px; gap:10px; }
+    .video { position:relative; min-height:0; border:1px solid #253242; background:#05080c; }
+    .video img { width:100%; height:100%; object-fit:cover; display:block; }
+    .legend { position:absolute; left:12px; bottom:10px; display:flex; gap:8px; flex-wrap:wrap; }
+    .legend span { display:flex; align-items:center; gap:6px; padding:5px 7px; background:rgba(7,12,18,.82); font-size:12px; font-weight:700; }
+    .sw { width:18px; height:4px; background:var(--green); }
+    .border { background:#ffd64a; } .path { background:var(--amber); }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+    .metric { min-width:0; border:1px solid var(--line); background:var(--panel2); padding:7px 9px; }
+    .metric label { display:block; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; }
+    .metric div { margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:700; }
+    .controls { display:grid; grid-template-rows:auto 1fr auto; gap:12px; }
+    .quadMap { display:grid; grid-template-columns:repeat(2,1fr); grid-template-rows:repeat(2,76px); border:1px solid var(--line); background:var(--panel2); }
+    .quadMap div { display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted); font-size:12px; font-weight:700; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .quadMap div:nth-child(2), .quadMap div:nth-child(4) { border-right:0; } .quadMap div:nth-child(3), .quadMap div:nth-child(4) { border-bottom:0; }
+    .dpadWrap { display:grid; place-items:center; }
+    .dpad { display:grid; grid-template-columns:repeat(3,92px); grid-template-rows:repeat(3,58px); gap:8px; }
+    button { border:1px solid #486071; background:#1d2a36; color:var(--text); font:inherit; font-weight:800; cursor:pointer; }
+    button:hover { filter:brightness(1.08); border-color:#6d8799; } button:active { transform:translateY(1px); }
+    button.active { outline:2px solid var(--cyan); outline-offset:1px; }
+    .cmd { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:14px; }
+    .cmd b { font-size:22px; line-height:1; } .cmd span { font-size:11px; }
+    .goStop { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .go { min-height:52px; background:var(--green); color:#06170e; border-color:#6adc9f; font-size:18px; }
+    .stop { min-height:52px; background:var(--red); color:#fff6f6; border-color:#ef7979; font-size:18px; }
+    .warehouseBody, .logBody { display:grid; grid-template-rows:auto 1fr; gap:10px; }
+    .warehouseSummary, .statusGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .warehouseSummary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .list { min-height:0; overflow:auto; border:1px solid var(--line); background:var(--panel2); }
+    .item { display:grid; grid-template-columns:minmax(120px,.42fr) minmax(0,1fr); gap:8px; padding:9px 10px; border-bottom:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .item strong { color:var(--text); }
+    .log { min-height:0; overflow:auto; border:1px solid var(--line); background:#090e14; padding:8px 10px; font-family:Menlo, Consolas, monospace; font-size:12px; line-height:1.55; color:#d8e3ed; }
+    @media (max-width:940px) { body{overflow:auto}.app{height:auto}.grid{grid-template-columns:1fr; grid-template-rows:420px 440px 360px 360px; height:auto}.metrics,.warehouseSummary{grid-template-columns:repeat(2,1fr)} }
+  </style>
 </head>
 <body>
-  <table border="1" width="100%" height="100%">
-    <tr height="50%">
-      <td width="50%" align="center" valign="middle">
-        <h3><img src="http://192.168.240.4:5000/video_feed" width="480" height="320"></h3>
-      </td>
-
-      <td width="50%" align="center" valign="middle">
-        <table>
-          <tr align="center">
-            <td></td>
-            <td><button onclick="sendCommand('forward')">&#8593;</button></td> <!-- ↑ -->
-            <td></td>
-          </tr>
-          <tr align="center">
-            <td><button onclick="sendCommand('left')">&#8592;</button></td> <!-- ← -->
-            <td><button onclick="stopMotor()">&#9632;</button></td> <!-- ■ -->
-            <td><button onclick="sendCommand('right')">&#8594;</button></td> <!-- → -->
-          </tr>
-          <tr align="center">
-            <td></td>
-            <td><button onclick="sendCommand('backward')">&#8595;</button></td> <!-- ↓ -->
-            <td></td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-
-    <tr height="50%">
-      <td width="50%" align="center" valign="middle">
-        <h3><img src="http://192.168.240.4:5000/video_feed" width="480" height="320"></h3>
-      </td>
-      <td width="50%" align="center" valign="middle">
-        <h3>Placeholder (bottom-right)</h3>
-      </td>
-    </tr>
-  </table>
-
+  <div class="app">
+    <header><h1>PWP Rover Control</h1><div class="status"><span class="pill" id="motionPill">STOP</span><span class="pill" id="directionPill">FWD</span><span class="pill" id="sourcePill">SIMULATED</span></div></header>
+    <main class="grid">
+      <section><div class="head"><span>Quadrant 1: Realtime Rover View</span><span id="laneHeader">Overlay ready</span></div><div class="body videoBody"><div class="video"><img src="/video_feed" alt="Rover video stream with path overlay"><div class="legend"><span><i class="sw border"></i>Path Borders</span><span><i class="sw"></i>Centerline</span><span><i class="sw path"></i>Path Overlay</span></div></div><div class="metrics"><div class="metric"><label>Manual</label><div id="manualMetric">stop</div></div><div class="metric"><label>Auto</label><div id="autoMetric">stop</div></div><div class="metric"><label>Error</label><div id="errorMetric">0 px</div></div><div class="metric"><label>Confidence</label><div id="confidenceMetric">0.00</div></div></div></div></section>
+      <section><div class="head"><span>Quadrant 2: Rover Controls</span><span id="controlHeader">Manual</span></div><div class="body controls"><div class="quadMap"><div>Q1<br>Video</div><div>Q2<br>Controls</div><div>Q3<br>Source Warehouse</div><div>Q4<br>User Log</div></div><div class="dpadWrap"><div class="dpad"><div></div><button class="cmd" id="forwardBtn" onclick="sendCommand('forward')"><b>&uarr;</b><span>FWD</span></button><div></div><button class="cmd" id="leftBtn" onclick="sendCommand('left')"><b>&larr;</b><span>LEFT</span></button><button class="cmd" onclick="startAuto()"><b>A</b><span>AUTO</span></button><button class="cmd" id="rightBtn" onclick="sendCommand('right')"><b>&rarr;</b><span>RIGHT</span></button><div></div><button class="cmd" id="backwardBtn" onclick="sendCommand('backward')"><b>&darr;</b><span>BWD</span></button><div></div></div></div><div class="goStop"><button class="go" onclick="goRover()">GO</button><button class="stop" onclick="stopRover()">STOP</button></div></div></section>
+      <section><div class="head"><span>Quadrant 3: Source Code Warehouse</span><span id="warehouseCount">0 modules</span></div><div class="body warehouseBody"><div class="warehouseSummary"><div class="metric"><label>Hough Lines</label><div>Selected</div></div><div class="metric"><label>Perspective</label><div>Selected</div></div><div class="metric"><label>Circles</label><div>Selected</div></div></div><div class="list" id="warehouseList"></div></div></section>
+      <section><div class="head"><span>Quadrant 4: User Log</span><span id="logHeader">Live</span></div><div class="body logBody"><div class="statusGrid"><div class="metric"><label>Selected</label><div id="selectedMetric">forward</div></div><div class="metric"><label>Frame Source</label><div id="frameMetric">simulated</div></div><div class="metric"><label>Motion</label><div id="motionMetric">stopped</div></div><div class="metric"><label>Lane</label><div id="laneMetric">ready</div></div></div><div class="log" id="logList"></div></div></section>
+    </main>
+  </div>
   <script>
-    const API_BASE = "http://127.0.0.1:5000"; // change to your Pi IP if needed
-
-    async function sendCommand(direction) {
+    const buttons = { forward: forwardBtn, backward: backwardBtn, left: leftBtn, right: rightBtn };
+    async function post(path) { const response = await fetch(path, { method: "POST" }); return response.json(); }
+    async function sendCommand(direction) { await post(`/${direction}`); await refreshStatus(); }
+    async function goRover() { await post("/go"); await refreshStatus(); }
+    async function stopRover() { await post("/stop"); await refreshStatus(); }
+    async function startAuto() { await post("/autonomous/start"); await refreshStatus(); }
+    function text(id, value) { document.getElementById(id).textContent = value; }
+    function updateButtons(selected) { for (const key of Object.keys(buttons)) buttons[key].classList.toggle("active", key === selected); }
+    async function refreshStatus() {
       try {
-        const response = await fetch(`${API_BASE}/${direction}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" }
-        });
-        const data = await response.json();
-        console.log("Response:", data);
-      } catch (error) {
-        console.error("Error sending command:", error);
-      }
+        const response = await fetch("/status"); const data = await response.json(); const selected = data.selected_direction || "forward";
+        const short = { forward:"FWD", backward:"BWD", left:"LEFT", right:"RIGHT" }[selected] || selected.toUpperCase();
+        text("motionPill", data.autonomous ? "AUTO" : (data.motion_enabled ? "GO" : "STOP")); text("directionPill", short); text("sourcePill", String(data.frame_source || "simulated").toUpperCase());
+        text("laneHeader", data.lane_status || "Overlay ready"); text("manualMetric", data.manual_command || "stop"); text("autoMetric", data.auto_command || "stop"); text("errorMetric", `${data.auto_error || 0} px`); text("confidenceMetric", Number(data.overlay_confidence || 0).toFixed(2));
+        text("selectedMetric", selected); text("frameMetric", data.frame_source || "simulated"); text("motionMetric", data.motion_enabled ? "running" : "stopped"); text("laneMetric", data.lane_status || "ready"); text("controlHeader", data.autonomous ? "Autonomous" : "Manual"); updateButtons(selected);
+        const rows = data.user_log && data.user_log.length ? data.user_log : ["No log events yet"]; logList.innerHTML = rows.map((row) => `<div>${row}</div>`).join("");
+      } catch { text("laneHeader", "API unavailable"); }
     }
-
-    async function stopMotor() {
-      try {
-        const response = await fetch(`${API_BASE}/stop`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" }
-        });
-        const data = await response.json();
-        console.log("Response:", data);
-      } catch (error) {
-        console.error("Error sending command:", error);
-      }
+    async function loadWarehouse() {
+      try { const response = await fetch("/source_code_warehouse"); const data = await response.json(); const warehouse = data.warehouse || []; text("warehouseCount", `${warehouse.length} modules`); warehouseList.innerHTML = warehouse.map((item) => `<div class="item"><strong>${item.source}</strong><div><strong>${item.selected}</strong><br>${item.reason}</div></div>`).join(""); } catch { text("warehouseCount", "unavailable"); }
     }
-
+    loadWarehouse(); refreshStatus(); setInterval(refreshStatus, 700);
   </script>
 </body>
 </html>
